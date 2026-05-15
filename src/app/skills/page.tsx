@@ -4,14 +4,16 @@ import { useState } from 'react';
 import { useInitialize, useForceUpdate } from '@/hooks/useLocalStorage';
 import { store } from '@/lib/store';
 import {
-  SKILL_CATEGORIES, ALL_SKILL_KEYS, emptySkilScores,
-  categoryAverage, overallAverage, getSkillLabel,
-  type SkillScores, type SkillTest, type SkillName,
+  SKILL_CATEGORIES, emptySkilScores,
+  categoryAverage, overallAverage,
+  type SkillScores, type SkillTest,
 } from '@/lib/types';
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   ResponsiveContainer, Tooltip, Legend,
 } from 'recharts';
+import Link from 'next/link';
+import Modal from '@/components/Modal';
 
 export default function SkillsPage() {
   const ready = useInitialize();
@@ -22,6 +24,7 @@ export default function SkillsPage() {
   const [formDate, setFormDate] = useState('');
   const [formScores, setFormScores] = useState<SkillScores>(emptySkilScores());
   const [comparePlayer, setComparePlayer] = useState<string>('');
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   if (!ready) return <div className="animate-pulse h-96 bg-gray-200 rounded-xl" />;
 
@@ -55,7 +58,13 @@ export default function SkillsPage() {
     refresh();
   }
 
-  // Before/After comparison for selected player
+  function confirmDelete() {
+    if (!deleteConfirmId) return;
+    store.deleteSkillTest(deleteConfirmId);
+    setDeleteConfirmId(null);
+    refresh();
+  }
+
   const compareTests = comparePlayer
     ? skillTests.filter((t) => t.playerId === comparePlayer).sort((a, b) => a.date.localeCompare(b.date))
     : [];
@@ -69,7 +78,6 @@ export default function SkillsPage() {
     return entry;
   });
 
-  // Per-player summaries
   const playerSummaries = players.map((player) => {
     const tests = skillTests.filter((t) => t.playerId === player.id).sort((a, b) => a.date.localeCompare(b.date));
     const latest = tests[tests.length - 1];
@@ -81,233 +89,277 @@ export default function SkillsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Skill Evaluation</h1>
-        <button onClick={openNew} className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors">
+        <button onClick={openNew} disabled={players.length === 0}
+          className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           + New Evaluation
         </button>
       </div>
 
-      {/* Form Modal */}
-      {showForm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <h2 className="text-lg font-semibold mb-4">{editingId ? 'Edit Evaluation' : 'New Evaluation'}</h2>
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Player</label>
-                  <select value={formPlayerId} onChange={(e) => setFormPlayerId(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" disabled={!!editingId}>
-                    {players.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                  <input type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
-                </div>
-              </div>
-              {SKILL_CATEGORIES.map((cat) => (
-                <div key={cat.label} className="border border-gray-100 rounded-lg p-3">
-                  <p className="text-sm font-semibold mb-2" style={{ color: cat.color }}>{cat.label}</p>
-                  {cat.skills.map((skill) => (
-                    <div key={skill.key} className="flex items-center gap-2 mb-1">
-                      <span className="text-xs text-gray-600 w-28">{skill.label}</span>
-                      <input type="range" min={1} max={10} value={formScores[skill.key]}
-                        onChange={(e) => setFormScores({ ...formScores, [skill.key]: parseInt(e.target.value) })}
-                        className="flex-1 accent-purple-600 h-2" />
-                      <span className="text-xs font-bold w-5 text-right" style={{ color: cat.color }}>{formScores[skill.key]}</span>
-                    </div>
-                  ))}
+      {/* Evaluation Form Modal */}
+      <Modal open={showForm} onClose={() => setShowForm(false)}
+        title={editingId ? 'Edit Evaluation' : 'New Evaluation'}
+        maxWidth="max-w-lg"
+        footer={
+          <div className="flex gap-3">
+            <button onClick={save} className="flex-1 bg-purple-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-purple-700">
+              {editingId ? 'Update' : 'Submit'}
+            </button>
+            <button onClick={() => setShowForm(false)} className="flex-1 border border-gray-300 py-2 rounded-lg text-sm font-medium hover:bg-gray-50">Cancel</button>
+          </div>
+        }>
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Player</label>
+              <select value={formPlayerId} onChange={(e) => setFormPlayerId(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" disabled={!!editingId}>
+                {players.length === 0 && <option value="">No players</option>}
+                {players.map((p) => <option key={p.id} value={p.id}>{p.name} (#{p.jerseyNumber})</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+              <input type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+            </div>
+          </div>
+
+          {/* Skill Categories with sliders */}
+          {SKILL_CATEGORIES.map((cat) => (
+            <div key={cat.label} className="border border-gray-100 rounded-lg p-3">
+              <p className="text-sm font-semibold mb-2" style={{ color: cat.color }}>{cat.label}</p>
+              {cat.skills.map((skill) => (
+                <div key={skill.key} className="flex items-center gap-2 mb-2">
+                  <span className="text-xs text-gray-600 w-28 shrink-0">{skill.label}</span>
+                  <input type="range" min={1} max={10} value={formScores[skill.key]}
+                    onChange={(e) => setFormScores({ ...formScores, [skill.key]: parseInt(e.target.value) })}
+                    className="flex-1 accent-purple-600 h-2" />
+                  <input type="number" min={1} max={10} value={formScores[skill.key]}
+                    onChange={(e) => {
+                      const v = Math.min(10, Math.max(1, parseInt(e.target.value) || 1));
+                      setFormScores({ ...formScores, [skill.key]: v });
+                    }}
+                    className="w-12 border border-gray-300 rounded px-1 py-0.5 text-xs text-center" />
                 </div>
               ))}
             </div>
-            <div className="flex gap-3 mt-4">
-              <button onClick={save} className="flex-1 bg-purple-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-purple-700">Save</button>
-              <button onClick={() => setShowForm(false)} className="flex-1 border border-gray-300 py-2 rounded-lg text-sm font-medium hover:bg-gray-50">Cancel</button>
-            </div>
-          </div>
+          ))}
         </div>
-      )}
+      </Modal>
 
-      {/* Before vs After Comparison */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
-        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-          <h2 className="text-lg font-semibold">Before vs After Comparison</h2>
-          <select value={comparePlayer} onChange={(e) => setComparePlayer(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm">
-            <option value="">Select a player...</option>
-            {players.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
-        </div>
-
-        {comparePlayer && beforeTest && afterTest ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ResponsiveContainer width="100%" height={300}>
-              <RadarChart data={radarData}>
-                <PolarGrid />
-                <PolarAngleAxis dataKey="skill" fontSize={11} />
-                <PolarRadiusAxis domain={[0, 10]} fontSize={10} />
-                <Radar dataKey="Before" stroke="#94a3b8" fill="#94a3b8" fillOpacity={0.2} />
-                <Radar dataKey="After" stroke="#7c3aed" fill="#7c3aed" fillOpacity={0.3} />
-                <Tooltip />
-                <Legend />
-              </RadarChart>
-            </ResponsiveContainer>
-            <div className="space-y-2">
-              <div className="flex items-center gap-4 text-xs text-gray-500 mb-2">
-                <span className="flex items-center gap-1"><span className="w-3 h-1 bg-gray-400 rounded" /> Before ({new Date(beforeTest.date).toLocaleDateString()})</span>
-                <span className="flex items-center gap-1"><span className="w-3 h-1 bg-purple-500 rounded" /> After ({new Date(afterTest.date).toLocaleDateString()})</span>
-              </div>
-              {SKILL_CATEGORIES.map((cat) => {
-                const before = categoryAverage(beforeTest.scores, cat);
-                const after = categoryAverage(afterTest.scores, cat);
-                const diff = after - before;
-                return (
-                  <div key={cat.label} className="flex items-center gap-2">
-                    <span className="text-xs w-20 font-medium" style={{ color: cat.color }}>{cat.label}</span>
-                    <div className="flex-1 bg-gray-100 rounded-full h-2 relative">
-                      <div className="absolute h-2 rounded-full bg-gray-300" style={{ width: `${before * 10}%` }} />
-                      <div className="absolute h-2 rounded-full" style={{ width: `${after * 10}%`, backgroundColor: cat.color, opacity: 0.7 }} />
-                    </div>
-                    <span className="text-xs w-8 text-right font-medium">{after.toFixed(1)}</span>
-                    <span className={`text-xs w-10 text-right font-bold ${diff > 0 ? 'text-green-600' : diff < 0 ? 'text-red-500' : 'text-gray-400'}`}>
-                      {diff > 0 ? '+' : ''}{diff.toFixed(1)}
-                    </span>
-                  </div>
-                );
-              })}
-              <div className="border-t pt-2 mt-2 flex items-center justify-between">
-                <span className="text-sm font-semibold">Overall</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm">{overallAverage(beforeTest.scores).toFixed(1)} → <strong className="text-purple-700">{overallAverage(afterTest.scores).toFixed(1)}</strong></span>
-                  {(() => {
-                    const d = overallAverage(afterTest.scores) - overallAverage(beforeTest.scores);
-                    return <span className={`text-xs font-bold ${d > 0 ? 'text-green-600' : 'text-red-500'}`}>{d > 0 ? '+' : ''}{d.toFixed(1)}</span>;
-                  })()}
-                </div>
-              </div>
-            </div>
+      {/* Delete Confirm Modal */}
+      <Modal open={!!deleteConfirmId} onClose={() => setDeleteConfirmId(null)} title="Delete Evaluation"
+        footer={
+          <div className="flex gap-3">
+            <button onClick={confirmDelete} className="flex-1 bg-red-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-red-700">Delete</button>
+            <button onClick={() => setDeleteConfirmId(null)} className="flex-1 border border-gray-300 py-2 rounded-lg text-sm font-medium hover:bg-gray-50">Cancel</button>
           </div>
-        ) : comparePlayer && compareTests.length < 2 ? (
-          <p className="text-sm text-gray-400 text-center py-8">Need at least 2 evaluations to compare. This player has {compareTests.length}.</p>
-        ) : (
-          <p className="text-sm text-gray-400 text-center py-8">Select a player to see their before vs after comparison</p>
-        )}
-      </div>
+        }>
+        <p className="text-sm text-gray-600">Are you sure you want to delete this evaluation? This cannot be undone.</p>
+      </Modal>
 
-      {/* Player Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {playerSummaries.map(({ player, latest, first, tests }) => {
-          if (!latest) return (
-            <div key={player.id} className="bg-white rounded-xl border border-gray-200 p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
-                  style={{ backgroundColor: player.avatarColor }}>{player.name.charAt(0)}</div>
-                <div>
-                  <p className="font-medium">{player.name}</p>
-                  <p className="text-xs text-gray-500">No evaluations recorded</p>
-                </div>
-              </div>
+      {/* Empty States */}
+      {players.length === 0 ? (
+        <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+          <p className="text-4xl mb-3">🎯</p>
+          <p className="text-lg font-semibold text-gray-700 mb-1">No players yet</p>
+          <p className="text-sm text-gray-500">Add players first before creating skill evaluations.</p>
+          <Link href="/players" className="inline-block mt-3 text-sm text-purple-600 hover:text-purple-800">Go to Players →</Link>
+        </div>
+      ) : skillTests.length === 0 ? (
+        <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+          <p className="text-4xl mb-3">🎯</p>
+          <p className="text-lg font-semibold text-gray-700 mb-1">No evaluations yet</p>
+          <p className="text-sm text-gray-500 mb-4">Create your first skill evaluation to start tracking player progress.</p>
+          <button onClick={openNew} className="bg-purple-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors">
+            + First Evaluation
+          </button>
+        </div>
+      ) : (
+        <>
+          {/* Before vs After Comparison */}
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+              <h2 className="text-lg font-semibold">Before vs After Comparison</h2>
+              <select value={comparePlayer} onChange={(e) => setComparePlayer(e.target.value)}
+                className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm">
+                <option value="">Select a player...</option>
+                {players.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
             </div>
-          );
 
-          const improvement = first && tests.length > 1 ? overallAverage(latest.scores) - overallAverage(first.scores) : 0;
-
-          return (
-            <div key={player.id} className="bg-white rounded-xl border border-gray-200 p-4">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
-                  style={{ backgroundColor: player.avatarColor }}>{player.name.charAt(0)}</div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium">{player.name}</p>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
-                      player.skillLevel === 'A' ? 'bg-green-100 text-green-700' :
-                      player.skillLevel === 'B' ? 'bg-blue-100 text-blue-700' :
-                      'bg-gray-100 text-gray-600'
-                    }`}>{player.skillLevel}</span>
+            {comparePlayer && beforeTest && afterTest ? (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <ResponsiveContainer width="100%" height={300}>
+                  <RadarChart data={radarData}>
+                    <PolarGrid />
+                    <PolarAngleAxis dataKey="skill" fontSize={11} />
+                    <PolarRadiusAxis domain={[0, 10]} fontSize={10} />
+                    <Radar dataKey="Before" stroke="#94a3b8" fill="#94a3b8" fillOpacity={0.2} />
+                    <Radar dataKey="After" stroke="#7c3aed" fill="#7c3aed" fillOpacity={0.3} />
+                    <Tooltip />
+                    <Legend />
+                  </RadarChart>
+                </ResponsiveContainer>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-4 text-xs text-gray-500 mb-2">
+                    <span className="flex items-center gap-1"><span className="w-3 h-1 bg-gray-400 rounded" /> Before ({new Date(beforeTest.date).toLocaleDateString()})</span>
+                    <span className="flex items-center gap-1"><span className="w-3 h-1 bg-purple-500 rounded" /> After ({new Date(afterTest.date).toLocaleDateString()})</span>
                   </div>
-                  <p className="text-xs text-gray-500">Last eval: {new Date(latest.date).toLocaleDateString()} ({tests.length} total)</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-lg font-bold text-purple-700">{overallAverage(latest.scores).toFixed(1)}</p>
-                  {improvement !== 0 && (
-                    <span className={`text-xs font-bold ${improvement > 0 ? 'text-green-600' : 'text-red-500'}`}>
-                      {improvement > 0 ? '↑' : '↓'}{Math.abs(improvement).toFixed(1)}
-                    </span>
-                  )}
-                </div>
-                <button onClick={() => openEdit(latest)}
-                  className="text-xs text-purple-600 hover:text-purple-800 px-2 py-1 rounded border border-purple-200 hover:bg-purple-50">
-                  Edit
-                </button>
-              </div>
-              <div className="space-y-1.5">
-                {SKILL_CATEGORIES.map((cat) => {
-                  const avg = categoryAverage(latest.scores, cat);
-                  const prevAvg = first && tests.length > 1 ? categoryAverage(first.scores, cat) : null;
-                  const diff = prevAvg !== null ? avg - prevAvg : 0;
-                  return (
-                    <div key={cat.label} className="flex items-center gap-2">
-                      <span className="text-[10px] text-gray-500 w-16 truncate">{cat.label}</span>
-                      <div className="flex-1 bg-gray-100 rounded-full h-1.5">
-                        <div className="h-1.5 rounded-full transition-all" style={{ width: `${avg * 10}%`, backgroundColor: cat.color }} />
-                      </div>
-                      <span className="text-[10px] font-medium w-6 text-right">{avg.toFixed(1)}</span>
-                      {diff !== 0 && (
-                        <span className={`text-[10px] font-medium w-7 ${diff > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                  {SKILL_CATEGORIES.map((cat) => {
+                    const before = categoryAverage(beforeTest.scores, cat);
+                    const after = categoryAverage(afterTest.scores, cat);
+                    const diff = after - before;
+                    return (
+                      <div key={cat.label} className="flex items-center gap-2">
+                        <span className="text-xs w-20 font-medium" style={{ color: cat.color }}>{cat.label}</span>
+                        <div className="flex-1 bg-gray-100 rounded-full h-2 relative">
+                          <div className="absolute h-2 rounded-full bg-gray-300" style={{ width: `${before * 10}%` }} />
+                          <div className="absolute h-2 rounded-full" style={{ width: `${after * 10}%`, backgroundColor: cat.color, opacity: 0.7 }} />
+                        </div>
+                        <span className="text-xs w-8 text-right font-medium">{after.toFixed(1)}</span>
+                        <span className={`text-xs w-10 text-right font-bold ${diff > 0 ? 'text-green-600' : diff < 0 ? 'text-red-500' : 'text-gray-400'}`}>
                           {diff > 0 ? '+' : ''}{diff.toFixed(1)}
+                        </span>
+                      </div>
+                    );
+                  })}
+                  <div className="border-t pt-2 mt-2 flex items-center justify-between">
+                    <span className="text-sm font-semibold">Overall</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">{overallAverage(beforeTest.scores).toFixed(1)} → <strong className="text-purple-700">{overallAverage(afterTest.scores).toFixed(1)}</strong></span>
+                      {(() => {
+                        const d = overallAverage(afterTest.scores) - overallAverage(beforeTest.scores);
+                        return <span className={`text-xs font-bold ${d > 0 ? 'text-green-600' : 'text-red-500'}`}>{d > 0 ? '+' : ''}{d.toFixed(1)}</span>;
+                      })()}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : comparePlayer && compareTests.length < 2 ? (
+              <p className="text-sm text-gray-400 text-center py-8">Need at least 2 evaluations to compare. This player has {compareTests.length}.</p>
+            ) : (
+              <p className="text-sm text-gray-400 text-center py-8">Select a player to see their before vs after comparison</p>
+            )}
+          </div>
+
+          {/* Player Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {playerSummaries.map(({ player, latest, first, tests }) => {
+              if (!latest) return (
+                <div key={player.id} className="bg-white rounded-xl border border-gray-200 p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
+                      style={{ backgroundColor: player.avatarColor }}>{player.name.charAt(0)}</div>
+                    <div>
+                      <Link href={`/players/${player.id}`} className="font-medium hover:text-purple-700 transition-colors">{player.name}</Link>
+                      <p className="text-xs text-gray-500">No evaluations recorded</p>
+                    </div>
+                  </div>
+                </div>
+              );
+
+              const improvement = first && tests.length > 1 ? overallAverage(latest.scores) - overallAverage(first.scores) : 0;
+
+              return (
+                <div key={player.id} className="bg-white rounded-xl border border-gray-200 p-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
+                      style={{ backgroundColor: player.avatarColor }}>{player.name.charAt(0)}</div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <Link href={`/players/${player.id}`} className="font-medium hover:text-purple-700 transition-colors">{player.name}</Link>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
+                          player.skillLevel === 'A' ? 'bg-green-100 text-green-700' :
+                          player.skillLevel === 'B' ? 'bg-blue-100 text-blue-700' :
+                          'bg-gray-100 text-gray-600'
+                        }`}>{player.skillLevel}</span>
+                      </div>
+                      <p className="text-xs text-gray-500">Last eval: {new Date(latest.date).toLocaleDateString()} ({tests.length} total)</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-purple-700">{overallAverage(latest.scores).toFixed(1)}</p>
+                      {improvement !== 0 && (
+                        <span className={`text-xs font-bold ${improvement > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                          {improvement > 0 ? '↑' : '↓'}{Math.abs(improvement).toFixed(1)}
                         </span>
                       )}
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+                    <button onClick={() => openEdit(latest)}
+                      className="text-sm text-gray-400 hover:text-purple-600 p-1" title="Edit latest">✏️</button>
+                  </div>
+                  <div className="space-y-1.5">
+                    {SKILL_CATEGORIES.map((cat) => {
+                      const avg = categoryAverage(latest.scores, cat);
+                      const prevAvg = first && tests.length > 1 ? categoryAverage(first.scores, cat) : null;
+                      const diff = prevAvg !== null ? avg - prevAvg : 0;
+                      return (
+                        <div key={cat.label} className="flex items-center gap-2">
+                          <span className="text-[10px] text-gray-500 w-16 truncate">{cat.label}</span>
+                          <div className="flex-1 bg-gray-100 rounded-full h-1.5">
+                            <div className="h-1.5 rounded-full transition-all" style={{ width: `${avg * 10}%`, backgroundColor: cat.color }} />
+                          </div>
+                          <span className="text-[10px] font-medium w-6 text-right">{avg.toFixed(1)}</span>
+                          {diff !== 0 && (
+                            <span className={`text-[10px] font-medium w-7 ${diff > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                              {diff > 0 ? '+' : ''}{diff.toFixed(1)}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
 
-      {/* All Records Table */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div className="p-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold">All Evaluation Records</h2>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gray-200 bg-gray-50">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Player</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Date</th>
-                {SKILL_CATEGORIES.map((c) => (
-                  <th key={c.label} className="px-3 py-3 text-center text-xs font-semibold uppercase" style={{ color: c.color }}>{c.label.slice(0, 6)}</th>
-                ))}
-                <th className="px-3 py-3 text-center text-xs font-semibold text-gray-500 uppercase">Overall</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[...skillTests].sort((a, b) => b.date.localeCompare(a.date)).map((test) => {
-                const player = players.find((p) => p.id === test.playerId);
-                return (
-                  <tr key={test.id} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="px-4 py-2 text-sm font-medium">{player?.name || 'Unknown'}</td>
-                    <td className="px-4 py-2 text-sm text-gray-600">{new Date(test.date).toLocaleDateString()}</td>
-                    {SKILL_CATEGORIES.map((cat) => (
-                      <td key={cat.label} className="px-3 py-2 text-center text-sm">{categoryAverage(test.scores, cat).toFixed(1)}</td>
+          {/* All Records Table */}
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="p-4 border-b border-gray-200">
+              <h2 className="text-lg font-semibold">All Evaluation Records</h2>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200 bg-gray-50">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Player</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Date</th>
+                    {SKILL_CATEGORIES.map((c) => (
+                      <th key={c.label} className="px-3 py-3 text-center text-xs font-semibold uppercase" style={{ color: c.color }}>{c.label.slice(0, 6)}</th>
                     ))}
-                    <td className="px-3 py-2 text-center text-sm font-semibold text-purple-700">{overallAverage(test.scores).toFixed(1)}</td>
-                    <td className="px-4 py-2 text-right">
-                      <button onClick={() => openEdit(test)} className="text-xs text-purple-600 hover:text-purple-800 mr-2">Edit</button>
-                      <button onClick={() => { store.deleteSkillTest(test.id); refresh(); }} className="text-xs text-red-500 hover:text-red-700">Delete</button>
-                    </td>
+                    <th className="px-3 py-3 text-center text-xs font-semibold text-gray-500 uppercase">Overall</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Actions</th>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                </thead>
+                <tbody>
+                  {[...skillTests].sort((a, b) => b.date.localeCompare(a.date)).map((test) => {
+                    const player = players.find((p) => p.id === test.playerId);
+                    return (
+                      <tr key={test.id} className="border-b border-gray-100 hover:bg-gray-50">
+                        <td className="px-4 py-2 text-sm font-medium">
+                          {player ? (
+                            <Link href={`/players/${player.id}`} className="hover:text-purple-700 transition-colors">{player.name}</Link>
+                          ) : 'Unknown'}
+                        </td>
+                        <td className="px-4 py-2 text-sm text-gray-600">{new Date(test.date).toLocaleDateString()}</td>
+                        {SKILL_CATEGORIES.map((cat) => (
+                          <td key={cat.label} className="px-3 py-2 text-center text-sm">{categoryAverage(test.scores, cat).toFixed(1)}</td>
+                        ))}
+                        <td className="px-3 py-2 text-center text-sm font-semibold text-purple-700">{overallAverage(test.scores).toFixed(1)}</td>
+                        <td className="px-4 py-2 text-right">
+                          <button onClick={() => openEdit(test)} className="text-sm text-gray-400 hover:text-purple-600 mr-1" title="Edit">✏️</button>
+                          <button onClick={() => setDeleteConfirmId(test.id)} className="text-sm text-gray-400 hover:text-red-500" title="Delete">🗑️</button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

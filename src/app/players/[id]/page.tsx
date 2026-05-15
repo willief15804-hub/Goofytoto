@@ -38,14 +38,12 @@ export default function PlayerProfilePage() {
   const attended = practices.filter((p) => p.attendees.includes(id));
   const attendRate = practices.length > 0 ? Math.round((attended.length / practices.length) * 100) : 0;
 
-  // Radar data: category averages, current vs first
   const radarData = SKILL_CATEGORIES.map((cat) => ({
     skill: cat.label,
     current: latestTest ? Math.round(categoryAverage(latestTest.scores, cat) * 10) / 10 : 0,
     baseline: firstTest && playerTests.length > 1 ? Math.round(categoryAverage(firstTest.scores, cat) * 10) / 10 : 0,
   }));
 
-  // Progress line chart: overall + category averages over time
   const progressData = playerTests.map((test) => {
     const entry: Record<string, string | number> = {
       date: new Date(test.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
@@ -105,11 +103,10 @@ export default function PlayerProfilePage() {
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Radar Chart */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h2 className="text-lg font-semibold mb-4">Skill Radar</h2>
-          {latestTest ? (
+      {playerTests.length > 0 ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <h2 className="text-lg font-semibold mb-4">Skill Radar</h2>
             <ResponsiveContainer width="100%" height={300}>
               <RadarChart data={radarData}>
                 <PolarGrid />
@@ -123,32 +120,34 @@ export default function PlayerProfilePage() {
                 <Legend />
               </RadarChart>
             </ResponsiveContainer>
-          ) : (
-            <p className="text-gray-400 text-center py-16">No evaluations recorded</p>
-          )}
-        </div>
+          </div>
 
-        {/* Progress Line Chart */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h2 className="text-lg font-semibold mb-4">Progress Over Time</h2>
-          {playerTests.length > 1 ? (
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={progressData}>
-                <XAxis dataKey="date" fontSize={11} />
-                <YAxis domain={[0, 10]} fontSize={11} />
-                <Tooltip />
-                <Legend />
-                {SKILL_CATEGORIES.map((cat) => (
-                  <Line key={cat.label} type="monotone" dataKey={cat.label} stroke={cat.color} strokeWidth={2} dot={{ r: 3 }} />
-                ))}
-                <Line type="monotone" dataKey="Overall" stroke="#1f2937" strokeWidth={3} strokeDasharray="5 5" dot={{ r: 4 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          ) : (
-            <p className="text-gray-400 text-center py-16">Need at least 2 evaluations to show progress</p>
-          )}
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <h2 className="text-lg font-semibold mb-4">Progress Over Time</h2>
+            {playerTests.length > 1 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={progressData}>
+                  <XAxis dataKey="date" fontSize={11} />
+                  <YAxis domain={[0, 10]} fontSize={11} />
+                  <Tooltip />
+                  <Legend />
+                  {SKILL_CATEGORIES.map((cat) => (
+                    <Line key={cat.label} type="monotone" dataKey={cat.label} stroke={cat.color} strokeWidth={2} dot={{ r: 3 }} />
+                  ))}
+                  <Line type="monotone" dataKey="Overall" stroke="#1f2937" strokeWidth={3} strokeDasharray="5 5" dot={{ r: 4 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="text-gray-400 text-center py-16">Need at least 2 evaluations to show progress</p>
+            )}
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+          <p className="text-gray-400">No evaluations recorded yet for this player.</p>
+          <Link href="/skills" className="text-sm text-purple-600 hover:text-purple-800 mt-2 inline-block">Go to Skill Evaluation →</Link>
+        </div>
+      )}
 
       {/* Detailed Skill Breakdown */}
       {latestTest && (

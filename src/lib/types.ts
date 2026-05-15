@@ -22,15 +22,34 @@ export interface TrainingPhase {
   description: string;
 }
 
-export const PHASES: TrainingPhase[] = [
-  { id: 1, name: 'Foundation',          weeks: [1, 4],   color: '#3b82f6', description: 'Build fundamentals & team bonding' },
-  { id: 2, name: 'Skill Building',      weeks: [5, 8],   color: '#10b981', description: 'Develop individual skills & techniques' },
-  { id: 3, name: 'Tactical Development', weeks: [9, 13],  color: '#f59e0b', description: 'Offense/defense systems & strategies' },
-  { id: 4, name: 'Competition Prep',    weeks: [14, 18], color: '#ef4444', description: 'Game simulations & tournament readiness' },
-  { id: 5, name: 'Taper & Peak',        weeks: [19, 20], color: '#8b5cf6', description: 'Recovery, sharpening & peak performance' },
+export const DEFAULT_PHASES: { name: string; weeks: number; color: string; description: string }[] = [
+  { name: 'Foundation', weeks: 4, color: '#3b82f6', description: 'Build fundamentals & team bonding' },
+  { name: 'Skill Building', weeks: 4, color: '#10b981', description: 'Develop individual skills & techniques' },
+  { name: 'Tactical Development', weeks: 5, color: '#f59e0b', description: 'Offense/defense systems & strategies' },
+  { name: 'Competition Prep', weeks: 5, color: '#ef4444', description: 'Game simulations & tournament readiness' },
+  { name: 'Taper & Peak', weeks: 2, color: '#8b5cf6', description: 'Recovery, sharpening & peak performance' },
 ];
 
-export type SessionDay = 'Mon' | 'Wed' | 'Fri';
+export function buildPhases(phaseWeeks?: number[]): TrainingPhase[] {
+  const pw = phaseWeeks || DEFAULT_PHASES.map((p) => p.weeks);
+  let start = 1;
+  return DEFAULT_PHASES.map((p, i) => {
+    const w = pw[i] || p.weeks;
+    const phase: TrainingPhase = {
+      id: i + 1,
+      name: p.name,
+      weeks: [start, start + w - 1],
+      color: p.color,
+      description: p.description,
+    };
+    start += w;
+    return phase;
+  });
+}
+
+export const PHASES: TrainingPhase[] = buildPhases();
+
+export type SessionDay = 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri' | 'Sat' | 'Sun';
 
 export interface Drill {
   name: string;
@@ -200,5 +219,44 @@ export interface Practice {
   attendees: string[];
 }
 
-// ── Tournament ──────────────────────────────────────────────────
+// ── Settings & Tournament ───────────────────────────────────────
+export interface TournamentSettings {
+  tournamentName: string;
+  tournamentDate: string;
+  trainingStartDate: string;
+  sessionsPerWeek: number;
+  trainingDays: SessionDay[];
+  phaseWeeks: number[]; // [4, 4, 5, 5, 2] — weeks per phase
+}
+
+export interface ArchivedTournament {
+  id: string;
+  settings: TournamentSettings;
+  archivedAt: string;
+  players: Player[];
+  sessions: TrainingSession[];
+  practices: Practice[];
+  skillTests: SkillTest[];
+  calendar: CalendarWeek[];
+  summary: {
+    totalSessions: number;
+    completedSessions: number;
+    avgAttendanceRate: number;
+    totalEvaluations: number;
+    playerCount: number;
+  };
+}
+
+export function defaultSettings(): TournamentSettings {
+  return {
+    tournamentName: '',
+    tournamentDate: '',
+    trainingStartDate: '',
+    sessionsPerWeek: 3,
+    trainingDays: ['Mon', 'Wed', 'Fri'],
+    phaseWeeks: [4, 4, 5, 5, 2],
+  };
+}
+
+// ── Deprecated constant — use settings.tournamentDate instead ───
 export const TOURNAMENT_DATE = '2026-10-15';
