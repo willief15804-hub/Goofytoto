@@ -28,7 +28,7 @@ export default function PlayersPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
 
-  if (!ready) return <div className="animate-pulse h-96 bg-gray-200 rounded-xl" />;
+  if (!ready) return <div className="animate-pulse h-96 rounded-2xl" style={{ backgroundColor: 'var(--primary)', opacity: 0.1 }} />;
 
   const players = store.getPlayers();
   const practices = store.getPractices();
@@ -101,54 +101,53 @@ export default function PlayersPage() {
   }
 
   function toggleSelectAll() {
-    if (selected.size === filtered.length) {
-      setSelected(new Set());
-    } else {
-      setSelected(new Set(filtered.map((p) => p.id)));
-    }
+    if (selected.size === filtered.length) setSelected(new Set());
+    else setSelected(new Set(filtered.map((p) => p.id)));
   }
 
-  const levelColors = { A: 'bg-green-100 text-green-700', B: 'bg-blue-100 text-blue-700', C: 'bg-gray-100 text-gray-600' };
+  const levelColors: Record<string, { bg: string; text: string; border: string }> = {
+    A: { bg: 'rgba(0, 214, 143, 0.15)', text: 'var(--success)', border: 'var(--success)' },
+    B: { bg: 'rgba(78, 205, 196, 0.15)', text: 'var(--secondary)', border: 'var(--secondary)' },
+    C: { bg: 'rgba(107, 114, 128, 0.15)', text: 'var(--text-secondary)', border: 'var(--text-secondary)' },
+  };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <h1 className="text-2xl font-bold">Players</h1>
+    <div className="space-y-6 stagger-children">
+      <div className="flex items-center justify-between flex-wrap gap-3 animate-fade-in-up">
+        <h1 className="text-3xl font-heading font-extrabold" style={{ color: 'var(--dark)' }}>Players</h1>
         <div className="flex items-center gap-3 flex-wrap">
-          {/* Position Filter */}
-          <div className="flex bg-gray-100 rounded-lg p-0.5">
+          <div className="flex rounded-xl p-0.5" style={{ backgroundColor: 'var(--background)' }}>
             {['All', ...POSITIONS].map((pos) => (
               <button key={pos} onClick={() => setFilterPosition(pos)}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                  filterPosition === pos ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-600 hover:text-gray-900'
-                }`}>{pos}</button>
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  filterPosition === pos ? 'text-[var(--dark)] shadow-sm' : 'text-[var(--text-secondary)] hover:text-[var(--dark)]'
+                }`}
+                style={filterPosition === pos ? { background: 'var(--primary)' } : {}}>{pos}</button>
             ))}
           </div>
-          {/* Level Filter */}
-          <div className="flex bg-gray-100 rounded-lg p-0.5">
+          <div className="flex rounded-xl p-0.5" style={{ backgroundColor: 'var(--background)' }}>
             {['All', ...LEVELS].map((lvl) => (
               <button key={lvl} onClick={() => setFilterLevel(lvl)}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                  filterLevel === lvl ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-600 hover:text-gray-900'
-                }`}>{lvl === 'All' ? 'All Levels' : `Level ${lvl}`}</button>
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  filterLevel === lvl ? 'text-[var(--dark)] shadow-sm' : 'text-[var(--text-secondary)] hover:text-[var(--dark)]'
+                }`}
+                style={filterLevel === lvl ? { background: 'var(--primary)' } : {}}>{lvl === 'All' ? 'All Levels' : `Level ${lvl}`}</button>
             ))}
           </div>
-          <button onClick={openNew} className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors">
-            + Add Player
-          </button>
+          <button onClick={openNew} className="btn-primary">+ Add Player</button>
         </div>
       </div>
 
-      {/* Bulk Actions */}
       {players.length > 0 && (
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 animate-fade-in-up">
           <button onClick={toggleSelectAll}
-            className="text-xs text-purple-600 hover:text-purple-800 font-medium">
+            className="text-xs font-bold transition-colors" style={{ color: 'var(--secondary)' }}>
             {selected.size === filtered.length && filtered.length > 0 ? 'Deselect All' : 'Select All'}
           </button>
           {selected.size > 0 && (
             <button onClick={() => setBulkDeleteConfirm(true)}
-              className="text-xs bg-red-50 text-red-600 hover:bg-red-100 px-3 py-1.5 rounded-lg font-medium transition-colors">
+              className="text-xs font-bold px-3 py-1.5 rounded-xl transition-colors"
+              style={{ backgroundColor: 'rgba(255, 107, 107, 0.1)', color: 'var(--danger)' }}>
               Delete Selected ({selected.size})
             </button>
           )}
@@ -159,77 +158,73 @@ export default function PlayersPage() {
       <Modal open={showForm} onClose={() => setShowForm(false)} title={editingId ? 'Edit Player' : 'New Player'}
         footer={
           <div className="flex gap-3">
-            <button onClick={save} className="flex-1 bg-purple-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-purple-700">Save</button>
-            <button onClick={() => setShowForm(false)} className="flex-1 border border-gray-300 py-2 rounded-lg text-sm font-medium hover:bg-gray-50">Cancel</button>
+            <button onClick={save} className="flex-1 btn-primary">Save</button>
+            <button onClick={() => setShowForm(false)} className="flex-1 btn-secondary">Cancel</button>
           </div>
         }>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+            <label className="block text-sm font-bold text-[var(--dark)] mb-1">Name</label>
             <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="Player name" />
+              className="w-full px-3 py-2.5 text-sm" placeholder="Player name" />
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Jersey #</label>
+              <label className="block text-sm font-bold text-[var(--dark)] mb-1">Jersey #</label>
               <input type="number" value={formJersey} onChange={(e) => setFormJersey(parseInt(e.target.value) || 0)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                className="w-full px-3 py-2.5 text-sm" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Position</label>
+              <label className="block text-sm font-bold text-[var(--dark)] mb-1">Position</label>
               <select value={formPosition} onChange={(e) => setFormPosition(e.target.value as Position)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                className="w-full px-3 py-2.5 text-sm">
                 {POSITIONS.map((p) => <option key={p} value={p}>{p}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Level</label>
+              <label className="block text-sm font-bold text-[var(--dark)] mb-1">Level</label>
               <select value={formLevel} onChange={(e) => setFormLevel(e.target.value as SkillLevel)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                className="w-full px-3 py-2.5 text-sm">
                 {LEVELS.map((l) => <option key={l} value={l}>Level {l}</option>)}
               </select>
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Color</label>
+            <label className="block text-sm font-bold text-[var(--dark)] mb-1">Color</label>
             <div className="flex gap-2 flex-wrap">
               {AVATAR_COLORS.map((c) => (
                 <button key={c} onClick={() => setFormColor(c)}
-                  className={`w-8 h-8 rounded-full transition-transform ${formColor === c ? 'ring-2 ring-purple-500 ring-offset-2 scale-110' : ''}`}
-                  style={{ backgroundColor: c }} />
+                  className={`w-9 h-9 rounded-full transition-transform ${formColor === c ? 'scale-110 ring-3' : ''}`}
+                  style={{ backgroundColor: c, ...(formColor === c ? { boxShadow: `0 0 0 3px var(--card-bg), 0 0 0 5px ${c}` } : {}) }} />
               ))}
             </div>
           </div>
         </div>
       </Modal>
 
-      {/* Delete Confirm Modal */}
+      {/* Delete Confirm */}
       <Modal open={!!deleteConfirmId} onClose={() => setDeleteConfirmId(null)} title="Delete Player"
         footer={
           <div className="flex gap-3">
-            <button onClick={() => deleteConfirmId && confirmDelete(deleteConfirmId)}
-              className="flex-1 bg-red-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-red-700">Delete</button>
-            <button onClick={() => setDeleteConfirmId(null)}
-              className="flex-1 border border-gray-300 py-2 rounded-lg text-sm font-medium hover:bg-gray-50">Cancel</button>
+            <button onClick={() => deleteConfirmId && confirmDelete(deleteConfirmId)} className="flex-1 btn-danger">Delete</button>
+            <button onClick={() => setDeleteConfirmId(null)} className="flex-1 btn-secondary">Cancel</button>
           </div>
         }>
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-[var(--text-secondary)]">
           Are you sure you want to delete <strong>{players.find((p) => p.id === deleteConfirmId)?.name}</strong>?
           This will also remove their attendance records and skill evaluations.
         </p>
       </Modal>
 
-      {/* Bulk Delete Confirm Modal */}
+      {/* Bulk Delete Confirm */}
       <Modal open={bulkDeleteConfirm} onClose={() => setBulkDeleteConfirm(false)} title="Delete Selected Players"
         footer={
           <div className="flex gap-3">
-            <button onClick={bulkDelete}
-              className="flex-1 bg-red-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-red-700">Delete {selected.size} Players</button>
-            <button onClick={() => setBulkDeleteConfirm(false)}
-              className="flex-1 border border-gray-300 py-2 rounded-lg text-sm font-medium hover:bg-gray-50">Cancel</button>
+            <button onClick={bulkDelete} className="flex-1 btn-danger">Delete {selected.size} Players</button>
+            <button onClick={() => setBulkDeleteConfirm(false)} className="flex-1 btn-secondary">Cancel</button>
           </div>
         }>
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-[var(--text-secondary)]">
           Are you sure you want to delete <strong>{selected.size} players</strong>?
           This will also remove their attendance records and skill evaluations.
         </p>
@@ -237,77 +232,83 @@ export default function PlayersPage() {
 
       {/* Empty State */}
       {players.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-          <p className="text-4xl mb-3">👥</p>
-          <p className="text-lg font-semibold text-gray-700 mb-1">No players yet</p>
-          <p className="text-sm text-gray-500 mb-4">Add your first player to get started tracking your team.</p>
-          <button onClick={openNew} className="bg-purple-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors">
-            + Add First Player
-          </button>
+        <div className="card p-12 text-center animate-fade-in-up">
+          <p className="text-5xl mb-4">👥</p>
+          <p className="text-xl font-heading font-extrabold mb-2" style={{ color: 'var(--dark)' }}>No players yet</p>
+          <p className="text-sm text-[var(--text-secondary)] mb-5">Add your first player to get started tracking your team.</p>
+          <button onClick={openNew} className="btn-primary text-base px-8 py-3">+ Add First Player</button>
         </div>
       ) : filtered.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-          <p className="text-gray-500 text-sm">No players match the current filters.</p>
+        <div className="card p-12 text-center animate-fade-in-up">
+          <p className="text-[var(--text-secondary)] text-sm">No players match the current filters.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map((player) => {
+          {filtered.map((player, idx) => {
             const attended = practices.filter((p) => p.attendees.includes(player.id)).length;
             const attendRate = practices.length > 0 ? Math.round((attended / practices.length) * 100) : 0;
             const tests = skillTests.filter((t) => t.playerId === player.id);
             const latestTest = tests.sort((a, b) => b.date.localeCompare(a.date))[0];
             const avgScore = latestTest ? overallAverage(latestTest.scores).toFixed(1) : '—';
             const isSelected = selected.has(player.id);
+            const lvl = levelColors[player.skillLevel];
 
             return (
-              <div key={player.id} className={`bg-white rounded-xl border p-5 transition-shadow group relative ${
-                isSelected ? 'border-purple-400 ring-2 ring-purple-100' : 'border-gray-200 hover:shadow-md'
-              }`}>
-                {/* Checkbox */}
+              <div key={player.id} className={`card p-5 transition-all group relative animate-fade-in-up ${
+                isSelected ? 'ring-2' : ''
+              }`}
+                style={{
+                  animationDelay: `${Math.min(idx * 50, 400)}ms`,
+                  ...(isSelected ? { borderColor: 'var(--primary)', boxShadow: '0 0 0 2px rgba(204,255,0,0.3)' } : {}),
+                }}>
                 <button onClick={() => toggleSelect(player.id)}
-                  className={`absolute top-3 left-3 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                    isSelected ? 'bg-purple-500 border-purple-500 text-white' : 'border-gray-300 hover:border-purple-400'
-                  }`}>
+                  className="absolute top-3 left-3 w-5 h-5 rounded-md flex items-center justify-center transition-all"
+                  style={{
+                    backgroundColor: isSelected ? 'var(--primary)' : 'transparent',
+                    border: isSelected ? '2px solid var(--primary)' : '2px solid #d1d5db',
+                    color: isSelected ? 'var(--dark)' : 'transparent',
+                  }}>
                   {isSelected && <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
                 </button>
 
                 <Link href={`/players/${player.id}`} className="block">
                   <div className="flex items-start gap-3 ml-5">
-                    <div className="w-12 h-12 rounded-full flex items-center justify-center text-white text-lg font-bold shrink-0"
-                      style={{ backgroundColor: player.avatarColor }}>{player.name.charAt(0)}</div>
+                    <div className="w-14 h-14 rounded-full flex items-center justify-center text-white text-xl font-bold shrink-0 ring-3 shadow-md"
+                      style={{ backgroundColor: player.avatarColor, boxShadow: `0 0 0 3px var(--card-bg), 0 0 0 5px ${lvl.border}` }}>
+                      {player.name.charAt(0)}
+                    </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <h3 className="font-semibold truncate group-hover:text-purple-700 transition-colors">{player.name}</h3>
-                        <span className="text-xs text-gray-400">#{player.jerseyNumber}</span>
+                        <h3 className="font-heading font-extrabold text-base truncate" style={{ color: 'var(--dark)' }}>{player.name}</h3>
+                        <span className="text-xs text-[var(--text-secondary)]">#{player.jerseyNumber}</span>
                       </div>
                       <div className="flex items-center gap-1.5 mt-1">
-                        <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{player.position}</span>
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${levelColors[player.skillLevel]}`}>{player.skillLevel}</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full font-bold" style={{ backgroundColor: 'var(--background)', color: 'var(--text-secondary)' }}>{player.position}</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full font-extrabold" style={{ backgroundColor: lvl.bg, color: lvl.text }}>{player.skillLevel}</span>
                       </div>
                     </div>
                   </div>
                   <div className="mt-4 grid grid-cols-3 gap-3 text-center">
                     <div>
-                      <p className="text-lg font-bold text-purple-700">{avgScore}</p>
-                      <p className="text-[10px] text-gray-500 uppercase">Skill Avg</p>
+                      <p className="text-lg font-extrabold stat-number" style={{ color: 'var(--secondary)' }}>{avgScore}</p>
+                      <p className="text-[10px] text-[var(--text-secondary)] uppercase font-bold tracking-wide">Skill</p>
                     </div>
                     <div>
-                      <p className="text-lg font-bold">{attended}</p>
-                      <p className="text-[10px] text-gray-500 uppercase">Practices</p>
+                      <p className="text-lg font-extrabold stat-number" style={{ color: 'var(--dark)' }}>{attended}</p>
+                      <p className="text-[10px] text-[var(--text-secondary)] uppercase font-bold tracking-wide">Practices</p>
                     </div>
                     <div>
-                      <p className="text-lg font-bold">{attendRate}%</p>
-                      <p className="text-[10px] text-gray-500 uppercase">Attend</p>
+                      <p className="text-lg font-extrabold stat-number" style={{ color: attendRate >= 80 ? 'var(--success)' : attendRate >= 50 ? 'var(--warning)' : 'var(--danger)' }}>{attendRate}%</p>
+                      <p className="text-[10px] text-[var(--text-secondary)] uppercase font-bold tracking-wide">Attend</p>
                     </div>
                   </div>
                 </Link>
 
-                {/* Action buttons */}
                 <div className="absolute top-3 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button onClick={(e) => { e.preventDefault(); openEdit(player); }}
-                    className="text-sm text-gray-400 hover:text-purple-600 p-1" title="Edit">✏️</button>
+                    className="w-7 h-7 rounded-lg flex items-center justify-center text-sm hover:bg-black/5 transition-colors text-[var(--text-secondary)]" title="Edit">✏️</button>
                   <button onClick={(e) => { e.preventDefault(); setDeleteConfirmId(player.id); }}
-                    className="text-sm text-gray-400 hover:text-red-500 p-1" title="Delete">🗑️</button>
+                    className="w-7 h-7 rounded-lg flex items-center justify-center text-sm hover:bg-red-50 transition-colors text-[var(--text-secondary)]" title="Delete">🗑️</button>
                 </div>
               </div>
             );

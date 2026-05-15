@@ -17,22 +17,15 @@ export default function SettingsPage() {
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  // Form state
   const [form, setForm] = useState<TournamentSettings | null>(null);
 
-  if (!ready) return <div className="animate-pulse h-96 bg-gray-200 rounded-xl" />;
+  if (!ready) return <div className="animate-pulse h-96 rounded-2xl" style={{ backgroundColor: 'var(--primary)', opacity: 0.1 }} />;
 
   const settings = store.getSettings();
   const f = form || settings;
 
-  function initForm() {
-    if (!form) setForm({ ...settings });
-  }
-
-  function updateForm(patch: Partial<TournamentSettings>) {
-    initForm();
-    setForm((prev) => ({ ...(prev || settings), ...patch }));
-  }
+  function initForm() { if (!form) setForm({ ...settings }); }
+  function updateForm(patch: Partial<TournamentSettings>) { initForm(); setForm((prev) => ({ ...(prev || settings), ...patch })); }
 
   function saveSettings() {
     if (!form) return;
@@ -58,201 +51,141 @@ export default function SettingsPage() {
 
   const totalWeeks = f.phaseWeeks.reduce((a, b) => a + b, 0);
 
-  function doArchive() {
-    store.archiveTournament();
-    setShowArchiveConfirm(false);
-    refresh();
-  }
-
-  function doNewTournament() {
-    store.startNewTournament();
-    setShowNewTournament(false);
-    setForm(null);
-    refresh();
-  }
-
-  function doReset() {
-    store.resetAll();
-    setShowResetConfirm(false);
-    window.location.reload();
-  }
+  function doArchive() { store.archiveTournament(); setShowArchiveConfirm(false); refresh(); }
+  function doNewTournament() { store.startNewTournament(); setShowNewTournament(false); setForm(null); refresh(); }
+  function doReset() { store.resetAll(); setShowResetConfirm(false); window.location.reload(); }
 
   function downloadCSV(content: string, filename: string) {
     const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
+    const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = filename; a.click(); URL.revokeObjectURL(url);
   }
 
   function downloadText(content: string, filename: string) {
     const blob = new Blob([content], { type: 'text/plain;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
+    const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = filename; a.click(); URL.revokeObjectURL(url);
   }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Settings</h1>
+    <div className="space-y-6 stagger-children">
+      <h1 className="text-3xl font-heading font-extrabold animate-fade-in-up" style={{ color: 'var(--dark)' }}>Settings</h1>
 
       {/* Tournament Configuration */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
-        <h2 className="text-lg font-semibold">Tournament Configuration</h2>
+      <div className="card-flat p-6 space-y-5 animate-fade-in-up">
+        <h2 className="text-lg font-heading font-bold" style={{ color: 'var(--dark)' }}>Tournament Configuration</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Tournament Name</label>
+            <label className="block text-sm font-bold text-[var(--dark)] mb-1">Tournament Name</label>
             <input type="text" value={f.tournamentName} onChange={(e) => updateForm({ tournamentName: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="e.g. VUG Ultimate 2026" />
+              className="w-full px-3 py-2.5 text-sm" placeholder="e.g. VUG Ultimate 2026" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Tournament Date</label>
+            <label className="block text-sm font-bold text-[var(--dark)] mb-1">Tournament Date</label>
             <input type="date" value={f.tournamentDate} onChange={(e) => updateForm({ tournamentDate: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+              className="w-full px-3 py-2.5 text-sm" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Training Start Date</label>
+            <label className="block text-sm font-bold text-[var(--dark)] mb-1">Training Start Date</label>
             <input type="date" value={f.trainingStartDate} onChange={(e) => updateForm({ trainingStartDate: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+              className="w-full px-3 py-2.5 text-sm" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Sessions Per Week</label>
+            <label className="block text-sm font-bold text-[var(--dark)] mb-1">Sessions Per Week</label>
             <input type="number" min={1} max={7} value={f.sessionsPerWeek}
               onChange={(e) => updateForm({ sessionsPerWeek: Math.max(1, parseInt(e.target.value) || 1) })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+              className="w-full px-3 py-2.5 text-sm" />
           </div>
         </div>
 
         {/* Training Days */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Training Days</label>
+          <label className="block text-sm font-bold text-[var(--dark)] mb-2">Training Days</label>
           <div className="flex flex-wrap gap-2">
             {ALL_DAYS.map((day) => (
               <button key={day} onClick={() => toggleDay(day)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  f.trainingDays.includes(day)
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}>{day}</button>
+                className="px-4 py-2.5 rounded-xl text-sm font-bold transition-all"
+                style={f.trainingDays.includes(day)
+                  ? { background: 'var(--primary)', color: 'var(--dark)' }
+                  : { background: 'var(--background)', color: 'var(--text-secondary)' }
+                }>{day}</button>
             ))}
           </div>
         </div>
 
         {/* Phase Configuration */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Phase Configuration</label>
-          <div className="space-y-2">
+          <label className="block text-sm font-bold text-[var(--dark)] mb-2">Phase Configuration</label>
+          <div className="space-y-2.5">
             {DEFAULT_PHASES.map((phase, i) => (
-              <div key={phase.name} className="flex items-center gap-3">
-                <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: phase.color }} />
-                <span className="text-sm font-medium w-44">{phase.name}</span>
+              <div key={phase.name} className="flex items-center gap-3 p-2.5 rounded-xl" style={{ backgroundColor: phase.color + '10' }}>
+                <div className="w-4 h-4 rounded-full shrink-0" style={{ backgroundColor: phase.color }} />
+                <span className="text-sm font-bold w-44" style={{ color: phase.color }}>{phase.name}</span>
                 <input type="number" min={1} max={20} value={f.phaseWeeks[i]}
                   onChange={(e) => setPhaseWeek(i, parseInt(e.target.value) || 1)}
-                  className="w-20 border border-gray-300 rounded-lg px-3 py-1.5 text-sm text-center" />
-                <span className="text-xs text-gray-500">weeks</span>
+                  className="w-20 rounded-xl px-3 py-1.5 text-sm text-center font-bold stat-number" />
+                <span className="text-xs text-[var(--text-secondary)] font-bold">weeks</span>
               </div>
             ))}
           </div>
-          <p className="text-xs text-gray-500 mt-2">Total: <strong>{totalWeeks} weeks</strong></p>
+          <p className="text-xs text-[var(--text-secondary)] mt-2 font-bold">Total: <strong className="stat-number" style={{ color: 'var(--dark)' }}>{totalWeeks} weeks</strong></p>
         </div>
 
         {/* Save Button */}
         <div className="flex items-center gap-3">
-          <button onClick={saveSettings} disabled={!form}
-            className="bg-purple-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <button onClick={saveSettings} disabled={!form} className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed">
             Save Settings
           </button>
-          {saved && <span className="text-sm text-green-600 font-medium">Saved!</span>}
+          {saved && <span className="text-sm font-bold animate-fade-in" style={{ color: 'var(--success)' }}>Saved!</span>}
         </div>
       </div>
 
       {/* Tournament Management */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
-        <h2 className="text-lg font-semibold">Tournament Management</h2>
+      <div className="card-flat p-6 space-y-4 animate-fade-in-up">
+        <h2 className="text-lg font-heading font-bold" style={{ color: 'var(--dark)' }}>Tournament Management</h2>
         <div className="flex flex-wrap gap-3">
           <button onClick={() => setShowArchiveConfirm(true)}
-            className="bg-blue-50 text-blue-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors">
+            className="px-4 py-2.5 rounded-xl text-sm font-bold transition-all"
+            style={{ backgroundColor: 'rgba(78, 205, 196, 0.15)', color: 'var(--secondary)' }}>
             Archive Tournament
           </button>
           <button onClick={() => setShowNewTournament(true)}
-            className="bg-green-50 text-green-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-100 transition-colors">
+            className="px-4 py-2.5 rounded-xl text-sm font-bold transition-all"
+            style={{ backgroundColor: 'rgba(0, 214, 143, 0.15)', color: 'var(--success)' }}>
             Start New Tournament
           </button>
           <button onClick={() => setShowResetConfirm(true)}
-            className="bg-red-50 text-red-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors">
+            className="px-4 py-2.5 rounded-xl text-sm font-bold transition-all"
+            style={{ backgroundColor: 'rgba(255, 107, 107, 0.15)', color: 'var(--danger)' }}>
             Reset All Data
           </button>
         </div>
       </div>
 
       {/* Export Data */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
-        <h2 className="text-lg font-semibold">Export Data</h2>
+      <div className="card-flat p-6 space-y-4 animate-fade-in-up">
+        <h2 className="text-lg font-heading font-bold" style={{ color: 'var(--dark)' }}>Export Data</h2>
         <div className="flex flex-wrap gap-3">
-          <button onClick={() => downloadCSV(exportPlayersCSV(), 'players.csv')}
-            className="border border-gray-300 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
-            Export Players CSV
-          </button>
-          <button onClick={() => downloadCSV(exportAttendanceCSV(), 'attendance.csv')}
-            className="border border-gray-300 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
-            Export Attendance CSV
-          </button>
-          <button onClick={() => downloadCSV(exportEvaluationsCSV(), 'evaluations.csv')}
-            className="border border-gray-300 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
-            Export Evaluations CSV
-          </button>
-          <button onClick={() => downloadText(exportSummary(), 'tournament-summary.txt')}
-            className="bg-purple-50 text-purple-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-100 transition-colors">
-            Export Summary
-          </button>
+          <button onClick={() => downloadCSV(exportPlayersCSV(), 'players.csv')} className="btn-secondary">Export Players CSV</button>
+          <button onClick={() => downloadCSV(exportAttendanceCSV(), 'attendance.csv')} className="btn-secondary">Export Attendance CSV</button>
+          <button onClick={() => downloadCSV(exportEvaluationsCSV(), 'evaluations.csv')} className="btn-secondary">Export Evaluations CSV</button>
+          <button onClick={() => downloadText(exportSummary(), 'tournament-summary.txt')} className="btn-primary">Export Summary</button>
         </div>
       </div>
 
-      {/* Archive Confirm */}
+      {/* Modals */}
       <Modal open={showArchiveConfirm} onClose={() => setShowArchiveConfirm(false)} title="Archive Tournament"
-        footer={
-          <div className="flex gap-3">
-            <button onClick={doArchive} className="flex-1 bg-blue-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-700">Archive</button>
-            <button onClick={() => setShowArchiveConfirm(false)} className="flex-1 border border-gray-300 py-2 rounded-lg text-sm font-medium hover:bg-gray-50">Cancel</button>
-          </div>
-        }>
-        <p className="text-sm text-gray-600">
-          This will save a snapshot of all current data (players, sessions, attendance, evaluations) as an archived tournament.
-          You can view it later on the History page.
-        </p>
+        footer={<div className="flex gap-3"><button onClick={doArchive} className="flex-1 btn-primary">Archive</button><button onClick={() => setShowArchiveConfirm(false)} className="flex-1 btn-secondary">Cancel</button></div>}>
+        <p className="text-sm text-[var(--text-secondary)]">This will save a snapshot of all current data as an archived tournament. You can view it later on the History page.</p>
       </Modal>
 
-      {/* New Tournament Confirm */}
       <Modal open={showNewTournament} onClose={() => setShowNewTournament(false)} title="Start New Tournament"
-        footer={
-          <div className="flex gap-3">
-            <button onClick={doNewTournament} className="flex-1 bg-green-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-green-700">Start New</button>
-            <button onClick={() => setShowNewTournament(false)} className="flex-1 border border-gray-300 py-2 rounded-lg text-sm font-medium hover:bg-gray-50">Cancel</button>
-          </div>
-        }>
-        <p className="text-sm text-gray-600">
-          The current tournament will be archived automatically. Sessions, attendance, evaluations, and calendar progress will be reset to zero.
-          <strong> Players will be kept.</strong>
-        </p>
+        footer={<div className="flex gap-3"><button onClick={doNewTournament} className="flex-1 btn-primary">Start New</button><button onClick={() => setShowNewTournament(false)} className="flex-1 btn-secondary">Cancel</button></div>}>
+        <p className="text-sm text-[var(--text-secondary)]">The current tournament will be archived automatically. Sessions, attendance, evaluations, and calendar progress will be reset to zero. <strong>Players will be kept.</strong></p>
       </Modal>
 
-      {/* Reset Confirm */}
       <Modal open={showResetConfirm} onClose={() => setShowResetConfirm(false)} title="Reset All Data"
-        footer={
-          <div className="flex gap-3">
-            <button onClick={doReset} className="flex-1 bg-red-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-red-700">Reset Everything</button>
-            <button onClick={() => setShowResetConfirm(false)} className="flex-1 border border-gray-300 py-2 rounded-lg text-sm font-medium hover:bg-gray-50">Cancel</button>
-          </div>
-        }>
-        <p className="text-sm text-gray-600">
-          This will permanently delete <strong>all data</strong> including players, sessions, evaluations, settings, and archived tournaments. This cannot be undone.
-        </p>
+        footer={<div className="flex gap-3"><button onClick={doReset} className="flex-1 btn-danger">Reset Everything</button><button onClick={() => setShowResetConfirm(false)} className="flex-1 btn-secondary">Cancel</button></div>}>
+        <p className="text-sm text-[var(--text-secondary)]">This will permanently delete <strong>all data</strong> including players, sessions, evaluations, settings, and archived tournaments. This cannot be undone.</p>
       </Modal>
     </div>
   );

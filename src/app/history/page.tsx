@@ -17,7 +17,7 @@ export default function HistoryPage() {
   const [viewId, setViewId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  if (!ready) return <div className="animate-pulse h-96 bg-gray-200 rounded-xl" />;
+  if (!ready) return <div className="animate-pulse h-96 rounded-2xl" style={{ backgroundColor: 'var(--accent-pink)', opacity: 0.1 }} />;
 
   const archives = store.getArchives();
   const viewing = archives.find((a) => a.id === viewId);
@@ -33,11 +33,11 @@ export default function HistoryPage() {
   if (archives.length === 0) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold">Tournament History</h1>
-        <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-          <p className="text-4xl mb-3">🏆</p>
-          <p className="text-lg font-semibold text-gray-700 mb-1">No archived tournaments</p>
-          <p className="text-sm text-gray-500">Archive your current tournament from Settings to see it here.</p>
+        <h1 className="text-3xl font-heading font-extrabold animate-fade-in-up" style={{ color: 'var(--dark)' }}>Tournament History</h1>
+        <div className="card p-12 text-center animate-fade-in-up">
+          <p className="text-5xl mb-4">🏆</p>
+          <p className="text-xl font-heading font-extrabold mb-2" style={{ color: 'var(--dark)' }}>No archived tournaments</p>
+          <p className="text-sm text-[var(--text-secondary)]">Archive your current tournament from Settings to see it here.</p>
         </div>
       </div>
     );
@@ -55,32 +55,44 @@ export default function HistoryPage() {
     });
 
     return (
-      <div className="space-y-6">
-        <button onClick={() => setViewId(null)} className="text-sm text-purple-600 hover:text-purple-800">← Back to History</button>
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">{viewing.settings.tournamentName || 'Untitled Tournament'}</h1>
-          <span className="text-sm text-gray-500">Archived {new Date(viewing.archivedAt).toLocaleDateString()}</span>
+      <div className="space-y-6 stagger-children">
+        <button onClick={() => setViewId(null)} className="text-sm font-bold inline-flex items-center gap-1 animate-fade-in-up" style={{ color: 'var(--secondary)' }}>
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+          Back to History
+        </button>
+        <div className="flex items-center justify-between animate-fade-in-up">
+          <h1 className="text-3xl font-heading font-extrabold" style={{ color: 'var(--dark)' }}>{viewing.settings.tournamentName || 'Untitled Tournament'}</h1>
+          <span className="text-sm text-[var(--text-secondary)] font-medium">Archived {new Date(viewing.archivedAt).toLocaleDateString()}</span>
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-          <SummaryCard label="Players" value={viewing.summary.playerCount} />
-          <SummaryCard label="Sessions" value={`${viewing.summary.completedSessions}/${viewing.summary.totalSessions}`} />
-          <SummaryCard label="Attendance" value={`${viewing.summary.avgAttendanceRate}%`} />
-          <SummaryCard label="Evaluations" value={viewing.summary.totalEvaluations} />
-          <SummaryCard label="Tournament Date" value={viewing.settings.tournamentDate ? new Date(viewing.settings.tournamentDate).toLocaleDateString() : '—'} />
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 animate-fade-in-up">
+          {[
+            { label: 'Players', value: viewing.summary.playerCount, color: 'var(--primary)' },
+            { label: 'Sessions', value: `${viewing.summary.completedSessions}/${viewing.summary.totalSessions}`, color: 'var(--secondary)' },
+            { label: 'Attendance', value: `${viewing.summary.avgAttendanceRate}%`, color: 'var(--accent-pink)' },
+            { label: 'Evaluations', value: viewing.summary.totalEvaluations, color: 'var(--accent-blue)' },
+            { label: 'Tournament', value: viewing.settings.tournamentDate ? new Date(viewing.settings.tournamentDate).toLocaleDateString() : '—', color: 'var(--dark)' },
+          ].map((card) => (
+            <div key={card.label} className="card-flat p-4 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-12 h-12 rounded-full opacity-10 -mr-3 -mt-3" style={{ backgroundColor: card.color }} />
+              <p className="text-2xl font-extrabold stat-number" style={{ color: 'var(--dark)' }}>{card.value}</p>
+              <p className="text-[10px] text-[var(--text-secondary)] uppercase font-bold tracking-wide">{card.label}</p>
+              <div className="h-1 w-8 rounded-full mt-1.5" style={{ backgroundColor: card.color }} />
+            </div>
+          ))}
         </div>
 
         {/* Team Radar */}
         {viewing.skillTests.length > 0 && (
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <h2 className="text-lg font-semibold mb-4">Team Skill Overview</h2>
+          <div className="card-flat p-5 animate-fade-in-up">
+            <h2 className="text-lg font-heading font-bold mb-4" style={{ color: 'var(--dark)' }}>Team Skill Overview</h2>
             <ResponsiveContainer width="100%" height={280}>
               <RadarChart data={teamRadar}>
-                <PolarGrid />
-                <PolarAngleAxis dataKey="skill" fontSize={11} />
+                <PolarGrid stroke="#e5e7eb" />
+                <PolarAngleAxis dataKey="skill" fontSize={11} tick={{ fill: 'var(--text-secondary)' }} />
                 <PolarRadiusAxis domain={[0, 10]} fontSize={10} />
-                <Radar dataKey="value" stroke="#7c3aed" fill="#7c3aed" fillOpacity={0.3} name="Team Average" />
+                <Radar dataKey="value" stroke="var(--secondary)" fill="var(--secondary)" fillOpacity={0.3} name="Team Average" />
                 <Tooltip />
               </RadarChart>
             </ResponsiveContainer>
@@ -89,18 +101,18 @@ export default function HistoryPage() {
 
         {/* Phase Progress */}
         {phases.length > 0 && viewing.sessions.length > 0 && (
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <h2 className="text-lg font-semibold mb-3">Phase Progress</h2>
-            <div className="flex gap-1">
+          <div className="card-flat p-5 animate-fade-in-up">
+            <h2 className="text-lg font-heading font-bold mb-3" style={{ color: 'var(--dark)' }}>Phase Progress</h2>
+            <div className="flex gap-1.5">
               {phases.map((phase) => {
                 const phaseSessions = viewing.sessions.filter((s) => s.weekNumber >= phase.weeks[0] && s.weekNumber <= phase.weeks[1]);
                 const phaseCompleted = phaseSessions.filter((s) => s.completed).length;
                 const pct = phaseSessions.length > 0 ? Math.round((phaseCompleted / phaseSessions.length) * 100) : 0;
                 return (
-                  <div key={phase.id} className="flex-1 rounded-lg p-3 text-center" style={{ backgroundColor: phase.color + '15' }}>
-                    <p className="text-xs font-semibold" style={{ color: phase.color }}>{phase.name}</p>
-                    <p className="text-lg font-bold mt-1">{pct}%</p>
-                    <p className="text-[10px] text-gray-500">{phaseCompleted}/{phaseSessions.length}</p>
+                  <div key={phase.id} className="flex-1 rounded-xl p-3 text-center" style={{ backgroundColor: phase.color + '15' }}>
+                    <p className="text-[10px] font-extrabold" style={{ color: phase.color }}>{phase.name}</p>
+                    <p className="text-xl font-extrabold stat-number mt-1" style={{ color: phase.color }}>{pct}%</p>
+                    <p className="text-[10px] text-[var(--text-secondary)] font-bold">{phaseCompleted}/{phaseSessions.length}</p>
                   </div>
                 );
               })}
@@ -109,8 +121,8 @@ export default function HistoryPage() {
         )}
 
         {/* Players */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h2 className="text-lg font-semibold mb-3">Players ({viewing.players.length})</h2>
+        <div className="card-flat p-5 animate-fade-in-up">
+          <h2 className="text-lg font-heading font-bold mb-3" style={{ color: 'var(--dark)' }}>Players ({viewing.players.length})</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {viewing.players.map((p) => {
               const attended = viewing.practices.filter((pr) => pr.attendees.includes(p.id)).length;
@@ -118,12 +130,12 @@ export default function HistoryPage() {
               const tests = viewing.skillTests.filter((t) => t.playerId === p.id).sort((a, b) => b.date.localeCompare(a.date));
               const avg = tests[0] ? overallAverage(tests[0].scores).toFixed(1) : '—';
               return (
-                <div key={p.id} className="flex items-center gap-3 p-3 rounded-lg border border-gray-100">
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0"
+                <div key={p.id} className="flex items-center gap-3 p-3 rounded-xl" style={{ border: '1px solid var(--background)' }}>
+                  <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0"
                     style={{ backgroundColor: p.avatarColor }}>{p.name.charAt(0)}</div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{p.name} <span className="text-gray-400">#{p.jerseyNumber}</span></p>
-                    <p className="text-xs text-gray-500">{p.position} · {p.skillLevel} · Att: {rate}% · Skill: {avg}</p>
+                    <p className="text-sm font-bold truncate" style={{ color: 'var(--dark)' }}>{p.name} <span className="text-[var(--text-secondary)]">#{p.jerseyNumber}</span></p>
+                    <p className="text-xs text-[var(--text-secondary)]">{p.position} · {p.skillLevel} · Att: {rate}% · Skill: {avg}</p>
                   </div>
                 </div>
               );
@@ -135,57 +147,46 @@ export default function HistoryPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Tournament History</h1>
+    <div className="space-y-6 stagger-children">
+      <h1 className="text-3xl font-heading font-extrabold animate-fade-in-up" style={{ color: 'var(--dark)' }}>Tournament History</h1>
 
       <Modal open={!!deleteId} onClose={() => setDeleteId(null)} title="Delete Archive"
-        footer={
-          <div className="flex gap-3">
-            <button onClick={confirmDelete} className="flex-1 bg-red-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-red-700">Delete</button>
-            <button onClick={() => setDeleteId(null)} className="flex-1 border border-gray-300 py-2 rounded-lg text-sm font-medium hover:bg-gray-50">Cancel</button>
-          </div>
-        }>
-        <p className="text-sm text-gray-600">Are you sure you want to permanently delete this archived tournament?</p>
+        footer={<div className="flex gap-3"><button onClick={confirmDelete} className="flex-1 btn-danger">Delete</button><button onClick={() => setDeleteId(null)} className="flex-1 btn-secondary">Cancel</button></div>}>
+        <p className="text-sm text-[var(--text-secondary)]">Are you sure you want to permanently delete this archived tournament?</p>
       </Modal>
 
       <div className="space-y-4">
-        {archives.sort((a, b) => b.archivedAt.localeCompare(a.archivedAt)).map((arch) => (
-          <div key={arch.id} className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-shadow">
+        {archives.sort((a, b) => b.archivedAt.localeCompare(a.archivedAt)).map((arch, idx) => (
+          <div key={arch.id} className="card p-5 animate-fade-in-up" style={{ animationDelay: `${idx * 50}ms` }}>
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div>
-                <h3 className="font-semibold text-lg">{arch.settings.tournamentName || 'Untitled Tournament'}</h3>
-                <p className="text-sm text-gray-500">
+                <h3 className="font-heading font-extrabold text-lg" style={{ color: 'var(--dark)' }}>{arch.settings.tournamentName || 'Untitled Tournament'}</h3>
+                <p className="text-sm text-[var(--text-secondary)]">
                   Archived {new Date(arch.archivedAt).toLocaleDateString()} · Tournament: {arch.settings.tournamentDate ? new Date(arch.settings.tournamentDate).toLocaleDateString() : '—'}
                 </p>
               </div>
               <div className="flex gap-2">
-                <button onClick={() => setViewId(arch.id)}
-                  className="text-sm bg-purple-50 text-purple-700 px-4 py-2 rounded-lg font-medium hover:bg-purple-100 transition-colors">
-                  View Details
-                </button>
-                <button onClick={() => setDeleteId(arch.id)}
-                  className="text-sm text-red-500 hover:text-red-700 px-2 py-2">🗑️</button>
+                <button onClick={() => setViewId(arch.id)} className="btn-primary text-sm">View Details</button>
+                <button onClick={() => setDeleteId(arch.id)} className="text-sm text-[var(--text-secondary)] hover:text-[var(--danger)] px-2 py-2">🗑️</button>
               </div>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mt-4">
-              <div><p className="text-xl font-bold">{arch.summary.playerCount}</p><p className="text-xs text-gray-500">Players</p></div>
-              <div><p className="text-xl font-bold">{arch.summary.completedSessions}/{arch.summary.totalSessions}</p><p className="text-xs text-gray-500">Sessions</p></div>
-              <div><p className="text-xl font-bold">{arch.summary.avgAttendanceRate}%</p><p className="text-xs text-gray-500">Attendance</p></div>
-              <div><p className="text-xl font-bold">{arch.summary.totalEvaluations}</p><p className="text-xs text-gray-500">Evaluations</p></div>
-              <div><p className="text-xl font-bold">{arch.settings.phaseWeeks.reduce((a, b) => a + b, 0)}</p><p className="text-xs text-gray-500">Weeks</p></div>
+              {[
+                { label: 'Players', value: arch.summary.playerCount },
+                { label: 'Sessions', value: `${arch.summary.completedSessions}/${arch.summary.totalSessions}` },
+                { label: 'Attendance', value: `${arch.summary.avgAttendanceRate}%` },
+                { label: 'Evaluations', value: arch.summary.totalEvaluations },
+                { label: 'Weeks', value: arch.settings.phaseWeeks.reduce((a: number, b: number) => a + b, 0) },
+              ].map((stat) => (
+                <div key={stat.label}>
+                  <p className="text-xl font-extrabold stat-number" style={{ color: 'var(--dark)' }}>{stat.value}</p>
+                  <p className="text-[10px] text-[var(--text-secondary)] uppercase font-bold tracking-wide">{stat.label}</p>
+                </div>
+              ))}
             </div>
           </div>
         ))}
       </div>
-    </div>
-  );
-}
-
-function SummaryCard({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4">
-      <p className="text-2xl font-bold">{value}</p>
-      <p className="text-xs text-gray-500">{label}</p>
     </div>
   );
 }
